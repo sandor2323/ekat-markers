@@ -5,6 +5,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const PORT = process.env.PORT || 3000;
 const HOUR = 3600 * 1000;
@@ -19,6 +20,20 @@ function httpErr(status, message) {
   const e = new Error(message);
   e.status = status;
   return e;
+}
+
+// Пароли храним в виде "соль:хэш" (scrypt, без сторонних библиотек).
+function hashPass(pass) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.scryptSync(pass, salt, 64).toString('hex');
+  return salt + ':' + hash;
+}
+
+function verifyPass(pass, stored) {
+  const parts = String(stored).split(':');
+  if (parts.length !== 2) return false;
+  const test = crypto.scryptSync(pass, parts[0], 64).toString('hex');
+  return test === parts[1];
 }
 
 /* ---------- Хранилище: файл (локально) ---------- */
@@ -89,6 +104,26 @@ const SB_TABLE = SUPABASE_URL + '/rest/v1/markers';
 
 async function sb(query, options = {}) {
   const res = await fetch(SB_TABLE + query, {
+    ...options,
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation',
+      ...(options.headers || {}),
+    },
+  });
+  if (!res.ok) {
+    const t = await res.text().catch(() => '');
+    throw httpErr(502, 'db error: ' + t.slice(0, 200));
+  }
+  return res.json();
+}
+
+const SB_USERS = SUPABASE_URL + '/rest/v1/users';
+
+async function sbUsers(query, options = {}) {
+  const res = await fetch(SB_USERS + query, {
     ...options,
     headers: {
       apikey: SUPABASE_KEY,
@@ -208,6 +243,7 @@ const server = http.createServer(async (req, res) => {
     const lat = Number(body.lat);
     const lng = Number(body.lng);
     const text = String(body.text || '').trim().slice(0, MAX_TEXT);
+    const createdBy = String(body.created_by || '').trim().slice(0, 30);
     if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
       return sendJson(res, 400, { error: 'invalid latitude' });
     }
@@ -219,6 +255,7 @@ const server = http.createServer(async (req, res) => {
       lat,
       lng,
       text,
+      created_by: createdBy,
       status: 'active',
       expires_at: Date.now() + 2 * HOUR,
       created_at: Date.now(),
@@ -246,6 +283,41 @@ const server = http.createServer(async (req, res) => {
     try {
       const m = await storage.clear(clearMatch[1]);
       return sendJson(res, 200, m);
+    } catch (e) {
+      return sendJson(res, e.status || 500, { error: e.message });
+    }
+  }
+
+  // ---- Авторизация (вход/регистрация) ----
+  if (p === '/api/auth' && req.method === 'POST') {
+    let body;
+    try {
+      body = await readBody(req);
+    } catch (e) {
+      return sendJson(res, 400, { error: 'bad request' });
+    }
+    const name = String(body.name || '').trim().slice(0, 30);
+    const pass = String(body.pass || '');
+    if (!/^[\w\-]{1,30}$/.test(name)) {
+      return sendJson(res, 400, { error: 'Никнейм: 1-30 символов (буквы, цифры, _ , -)' });
+    }
+    if (pass.length < 4) {
+      return sendJson(res, 400, { error: 'Пароль: минимум 4 символа' });
+    }
+    if (!USE_SUPABASE) {
+      // Локально (без базы) — входим без проверки
+      return sendJson(res, 200, { ok: true, name });
+    }
+    try {
+      const rows = await sbUsers(`?name=eq.${encodeURIComponent(name)}&select=*`);
+      if (rows.length === 0) {
+        await sbUsers('', { method: 'POST', body: JSON.stringify({ name, pass: hashPass(pass) }) });
+        return sendJson(res, 200, { ok: true, name, registered: true });
+      }
+      if (verifyPass(pass, rows[0].pass)) {
+        return sendJson(res, 200, { ok: true, name });
+      }
+      return sendJson(res, 401, { error: 'Неверный пароль' });
     } catch (e) {
       return sendJson(res, e.status || 500, { error: e.message });
     }

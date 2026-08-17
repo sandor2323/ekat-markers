@@ -8,10 +8,29 @@
   <meta name="description" content="Карта Екатеринбурга с метками. Поставьте метку правой кнопкой мыши: она будет видна всем и проживёт 2 часа.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23ff3333'/></svg>">
   <link rel="stylesheet" href="vendor/leaflet.css">
-  <link rel="stylesheet" href="style.css?v=6">
+  <link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
+  <!-- Экран загрузки с полицейскими мигалками -->
+  <div id="splash">
+    <div class="sirens">
+      <div class="siren siren-blue"></div>
+      <div class="siren siren-red"></div>
+    </div>
+  </div>
+
   <div id="map"></div>
+
+  <!-- Окно входа -->
+  <div id="login" class="login hidden">
+    <div class="login-box">
+      <div class="login-title">Вход</div>
+      <input id="login-name" class="login-input" type="text" placeholder="Никнейм" maxlength="30" autocomplete="username">
+      <input id="login-pass" class="login-input" type="password" placeholder="Пароль" autocomplete="current-password">
+      <div id="login-error" class="login-error"></div>
+      <button id="login-btn" class="btn btn-yes login-btn">Войти</button>
+    </div>
+  </div>
 
   <!-- Диалог «Поставить метку?» -->
   <div id="ask-box" class="ask-box hidden">
@@ -23,6 +42,6 @@
   </div>
 
   <script src="vendor/leaflet.js"></script>
-  <script src="app.js?v=6"></script>
+  <script src="app.js?v=7"></script>
 </body>
 </html>

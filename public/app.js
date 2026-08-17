@@ -9,7 +9,7 @@ const map = L.map('map', { attributionControl: false }).setView([56.8342, 60.600
 L.tileLayer(
   'https://core-renderer-tiles.maps.yandex.net/tiles?l=map&v=21.10.5&x={x}&y={y}&z={z}&scale=1&lang=ru_RU&projection=web_mercator',
   {
-    maxZoom: 18,
+    maxZoom: 19,
     detectRetina: true,
   }
 ).addTo(map);
@@ -81,7 +81,10 @@ function popupHtml(m) {
         <button class="btn btn-clear" data-act="clear" data-id="${m.id}">Чисто</button>
        </div>`;
   const textHtml = m.text ? `<div class="popup-text">${esc(m.text)}</div>` : '';
-  return `${textHtml}${timeHtml}${actions}`;
+  const authorHtml = m.created_by
+    ? `<div class="popup-author">Поставил: ${esc(m.created_by)}</div>`
+    : '';
+  return `${authorHtml}${textHtml}${timeHtml}${actions}`;
 }
 
 function updatePopup(marker) {
@@ -155,6 +158,7 @@ document.getElementById('ask-yes').addEventListener('click', async () => {
       body: JSON.stringify({
         lat: pendingLatLng.lat,
         lng: pendingLatLng.lng,
+        created_by: localStorage.getItem('name') || '',
       }),
     });
     closeDialogs();
@@ -220,3 +224,48 @@ setInterval(() => {
 
 setInterval(refresh, POLL_MS);
 refresh();
+
+/* ---------- Экран загрузки и вход ---------- */
+
+// Экран загрузки: показываем 3 секунды, затем вход (если нет сохранённой сессии)
+setTimeout(() => {
+  const splash = document.getElementById('splash');
+  if (splash) splash.classList.add('hidden');
+  if (!localStorage.getItem('name')) {
+    document.getElementById('login').classList.remove('hidden');
+    document.getElementById('login-name').focus();
+  }
+}, 3000);
+
+const loginNameInput = document.getElementById('login-name');
+const loginPassInput = document.getElementById('login-pass');
+const loginBtn = document.getElementById('login-btn');
+const loginError = document.getElementById('login-error');
+
+async function doLogin() {
+  const name = loginNameInput.value.trim();
+  const pass = loginPassInput.value;
+  loginError.textContent = '';
+  loginBtn.disabled = true;
+  try {
+    const res = await api('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, pass }),
+    });
+    localStorage.setItem('name', res.name);
+    document.getElementById('login').classList.add('hidden');
+  } catch (e) {
+    loginError.textContent = e.message;
+  } finally {
+    loginBtn.disabled = false;
+  }
+}
+
+loginBtn.addEventListener('click', doLogin);
+loginPassInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') doLogin();
+});
+loginNameInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') loginPassInput.focus();
+});

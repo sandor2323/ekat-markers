@@ -75,6 +75,11 @@ html, body {
   margin: 0 0 8px;
   word-break: break-word;
 }
+.popup-author {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin: 0 0 4px;
+}
 .popup-time {
   font-size: 13px;
   font-weight: 600;
@@ -132,6 +137,94 @@ html, body {
   border-radius: 50%;
   border: 2px solid rgba(255, 255, 255, 0.9);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+/* Экран загрузки с полицейскими мигалками */
+#splash {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: #0a1a3f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.5s;
+}
+#splash.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+.sirens {
+  display: flex;
+  gap: 26px;
+}
+.siren {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  animation: blink 0.55s infinite;
+}
+.siren-blue {
+  background: #2b5cff;
+  box-shadow: 0 0 34px #2b5cff;
+}
+.siren-red {
+  background: #ff2b2b;
+  box-shadow: 0 0 34px #ff2b2b;
+  animation-delay: 0.27s;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.12; }
+}
+
+/* Окно входа */
+.login {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  background: rgba(10, 16, 30, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.login-box {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  padding: 26px 22px;
+  width: 280px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
+}
+.login-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 18px;
+  text-align: center;
+}
+.login-input {
+  width: 100%;
+  background: #101014;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 11px 12px;
+  font-size: 15px;
+  margin-bottom: 10px;
+}
+.login-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.login-error {
+  color: #ff6b6b;
+  font-size: 13px;
+  min-height: 18px;
+  margin: 2px 0 8px;
+}
+.login-btn {
+  width: 100%;
+  min-height: 44px;
 }
 
 /* Мобильная версия: крупные тап-таргеты, удобный диалог */
