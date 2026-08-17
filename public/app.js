@@ -4,20 +4,13 @@ const LIFETIME = 2 * 60 * 60 * 1000; // 2 часа
 const RENEW_TIME = 30 * 60 * 1000; // +30 минут
 const POLL_MS = 10 * 1000; // опрос сервера раз в 10 сек
 
-// На экранах с высоким разрешением (iPhone/Android) грузим тайлы Яндекса в 2x —
-// это даёт заметно более чёткую картинку, чем обычный detectRetina.
-const RETINA = (window.devicePixelRatio || 1) >= 2;
-const TILE_SCALE = RETINA ? 2 : 1;
-
-const map = L.map('map', { attributionControl: false }).setView([56.8336, 60.5986], 15);
+const map = L.map('map', { attributionControl: false }).setView([56.8342, 60.6000], 15);
 
 L.tileLayer(
-  'https://core-renderer-tiles.maps.yandex.net/tiles?l=map&v=21.10.5&x={x}&y={y}&z={z}&scale=' + TILE_SCALE + '&lang=ru_RU',
+  'https://core-renderer-tiles.maps.yandex.net/tiles?l=map&v=21.10.5&x={x}&y={y}&z={z}&scale=1&lang=ru_RU',
   {
-    tileSize: 256 * TILE_SCALE,
-    zoomOffset: RETINA ? -1 : 0,
     maxZoom: 18,
-    maxNativeZoom: RETINA ? 17 : 18,
+    detectRetina: true,
   }
 ).addTo(map);
 
