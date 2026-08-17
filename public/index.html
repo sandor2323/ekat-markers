@@ -8,7 +8,7 @@
   <meta name="description" content="Карта Екатеринбурга с метками. Поставьте метку правой кнопкой мыши: она будет видна всем и проживёт 2 часа.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23ff3333'/></svg>">
   <link rel="stylesheet" href="vendor/leaflet.css">
-  <link rel="stylesheet" href="style.css?v=9">
+  <link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
   <!-- Экран загрузки с полицейскими мигалками -->
@@ -23,7 +23,7 @@
 
   <!-- Окно входа -->
   <div id="login" class="login hidden">
-    <div class="login-box">
+    <form id="login-form" class="login-box" autocomplete="off">
       <div class="login-title">Вход</div>
       <input id="login-name" class="login-input" type="text" placeholder="Никнейм" maxlength="30" autocomplete="username">
       <input id="login-pass" class="login-input" type="password" placeholder="Пароль" autocomplete="current-password">
@@ -33,10 +33,10 @@
         Запомнить меня
       </label>
       <div class="login-btns">
-        <button id="reg-btn" class="btn btn-no">Регистрация</button>
-        <button id="login-btn" class="btn btn-yes">Войти</button>
+        <button type="button" id="reg-btn" class="btn btn-no">Регистрация</button>
+        <button type="submit" id="login-btn" class="btn btn-yes">Войти</button>
       </div>
-    </div>
+    </form>
   </div>
 
   <!-- Диалог «Поставить метку?» -->
@@ -49,6 +49,6 @@
   </div>
 
   <script src="vendor/leaflet.js"></script>
-  <script src="app.js?v=9"></script>
+  <script src="app.js?v=10"></script>
 </body>
 </html>

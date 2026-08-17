@@ -247,6 +247,7 @@ setTimeout(() => {
   }
 }, 3000);
 
+const loginForm = document.getElementById('login-form');
 const loginNameInput = document.getElementById('login-name');
 const loginPassInput = document.getElementById('login-pass');
 const regBtn = document.getElementById('reg-btn');
@@ -264,6 +265,7 @@ async function auth(path) {
   }
   regBtn.disabled = true;
   loginBtn.disabled = true;
+  loginError.textContent = 'Подключение...';
   try {
     const res = await api(path, {
       method: 'POST',
@@ -280,11 +282,8 @@ async function auth(path) {
   }
 }
 
+loginForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  auth('/api/login');
+});
 regBtn.addEventListener('click', () => auth('/api/register'));
-loginBtn.addEventListener('click', () => auth('/api/login'));
-loginPassInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') auth('/api/login');
-});
-loginNameInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') loginPassInput.focus();
-});
