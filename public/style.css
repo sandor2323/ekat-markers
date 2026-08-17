@@ -222,6 +222,20 @@ html, body {
   min-height: 18px;
   margin: 2px 0 8px;
 }
+.login-remember {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+  cursor: pointer;
+}
+.login-remember input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
 .login-btn {
   width: 100%;
   min-height: 44px;

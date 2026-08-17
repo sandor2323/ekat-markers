@@ -228,10 +228,13 @@ refresh();
 /* ---------- Экран загрузки и вход ---------- */
 
 function safeGetName() {
-  try { return localStorage.getItem('name') || ''; } catch (e) { return ''; }
+  try { return localStorage.getItem('name') || sessionStorage.getItem('name') || ''; } catch (e) { return ''; }
 }
-function safeSetName(name) {
-  try { localStorage.setItem('name', name); } catch (e) { /* приватный режим Safari */ }
+function safeSetName(name, remember) {
+  try {
+    if (remember) localStorage.setItem('name', name);
+    else sessionStorage.setItem('name', name);
+  } catch (e) { /* приватный режим Safari */ }
 }
 
 // Экран загрузки: показываем 3 секунды, затем вход (если нет сохранённой сессии)
@@ -249,6 +252,7 @@ const loginPassInput = document.getElementById('login-pass');
 const regBtn = document.getElementById('reg-btn');
 const loginBtn = document.getElementById('login-btn');
 const loginError = document.getElementById('login-error');
+const rememberBox = document.getElementById('remember-box');
 
 async function auth(path) {
   const name = loginNameInput.value.trim();
@@ -266,7 +270,7 @@ async function auth(path) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, pass }),
     });
-    safeSetName(res.name);
+    safeSetName(res.name, rememberBox.checked);
     document.getElementById('login').classList.add('hidden');
   } catch (e) {
     loginError.textContent = e.message;
