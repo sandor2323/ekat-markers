@@ -4,11 +4,11 @@ const LIFETIME = 2 * 60 * 60 * 1000; // 2 часа
 const RENEW_TIME = 30 * 60 * 1000; // +30 минут
 const POLL_MS = 10 * 1000; // опрос сервера раз в 10 сек
 
-const map = L.map('map', { attributionControl: false }).setView([56.8389, 60.6057], 13);
+const map = L.map('map', { attributionControl: false }).setView([56.8362, 60.5990], 14);
 
 L.tileLayer(
   'https://core-renderer-tiles.maps.yandex.net/tiles?l=map&v=21.10.5&x={x}&y={y}&z={z}&scale=1&lang=ru_RU',
-  { maxZoom: 18 }
+  { maxZoom: 18, detectRetina: true }
 ).addTo(map);
 
 /* ---------- Вспомогательное ---------- */
