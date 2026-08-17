@@ -45,7 +45,7 @@ function fmtTime(ms) {
 
 async function api(path, options) {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 15000);
+  const timer = setTimeout(() => ctrl.abort(), 60000);
   try {
     const res = await fetch(path, { ...options, signal: ctrl.signal });
     if (!res.ok) {
@@ -282,7 +282,7 @@ async function auth(path) {
     document.getElementById('login').classList.add('hidden');
   } catch (e) {
     loginError.textContent = (e.name === 'AbortError')
-      ? 'Сервер не отвечает. Проверьте интернет и попробуйте ещё раз.'
+      ? 'Сервер просыпается. Подождите 30–60 секунд и нажмите ещё раз.'
       : e.message;
   } finally {
     regBtn.disabled = false;
