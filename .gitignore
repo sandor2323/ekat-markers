@@ -1,0 +1,11 @@
+node_modules/
+data/
+data/cache/
+.env
+*.log
+.DS_Store
+temp/
+*.md
+modify-style.mjs
+amvera.yml
+fly.toml

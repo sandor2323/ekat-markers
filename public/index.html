@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0e0e10">
+  <title>Карта Екатеринбурга — метки</title>
+  <meta name="description" content="Карта Екатеринбурга с метками. Поставьте метку правой кнопкой мыши: она будет видна всем и проживёт 2 часа.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23ff3333'/></svg>">
+  <link rel="stylesheet" href="vendor/leaflet.css">
+  <link rel="stylesheet" href="style.css?v=4">
+</head>
+<body>
+  <div id="map"></div>
+
+  <!-- Диалог «Поставить метку?» -->
+  <div id="ask-box" class="ask-box hidden">
+    <div class="ask-question">Поставить метку?</div>
+    <div class="ask-actions">
+      <button id="ask-yes" class="btn btn-yes">Да</button>
+      <button id="ask-no" class="btn btn-no">Нет</button>
+    </div>
+  </div>
+
+  <script src="vendor/leaflet.js"></script>
+  <script src="app.js?v=4"></script>
+</body>
+</html>

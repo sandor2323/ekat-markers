@@ -1,0 +1,13 @@
+node_modules
+data
+temp
+.git
+.gitignore
+.dockerignore
+Dockerfile
+fly.toml
+amvera.yml
+*.md
+*.zip
+modify-style.mjs
+public/style-map.json

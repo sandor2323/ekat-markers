@@ -1,0 +1,154 @@
+:root {
+  --bg: #0e0e10;
+  --panel: #1b1b1f;
+  --panel-border: #33333a;
+  --text: #e8e8ea;
+  --text-dim: #9a9aa2;
+  --accent: #4a9eff;
+  --red: #ff2222;
+  --green: #2ecc40;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+  /* Мобильное: без зума страницы при двойном тапе и без системного выделения */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+
+#map {
+  position: absolute;
+  inset: 0;
+  background: #0d0d0f;
+}
+
+.leaflet-container {
+  font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+  /* Запрет системного callout/выделения на iOS и Android при долгом нажатии */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Тёмная тема тайлов Яндекса: инверсия + поворот оттенка.
+   Белый фон карты -> тёмный, тёмные подписи улиц -> светлые. */
+.leaflet-tile-pane {
+  filter: invert(0.92) hue-rotate(180deg) saturate(0.55) brightness(1.02) contrast(1.02);
+}
+
+.leaflet-container {
+  font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+/* Тёмный зум-контрол */
+.leaflet-control-zoom a {
+  background: var(--panel) !important;
+  color: var(--text) !important;
+  border-color: var(--panel-border) !important;
+}
+.leaflet-control-zoom a:hover {
+  background: #2a2a30 !important;
+}
+
+/* Тёмные попапы */
+.leaflet-popup-content-wrapper {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6);
+}
+.leaflet-popup-tip {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+}
+.popup-text {
+  font-size: 14px;
+  margin: 0 0 8px;
+  word-break: break-word;
+}
+.popup-time {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: #ffd8d8;
+}
+.popup-time.dim { color: var(--text-dim); }
+.popup-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Кнопки */
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #fff;
+  transition: opacity 0.15s;
+}
+.btn:hover { opacity: 0.85; }
+.btn:disabled { opacity: 0.4; cursor: default; }
+.btn-yes { background: var(--accent); }
+.btn-no { background: #55555e; }
+.btn-renew { background: #8a6d1a; }
+.btn-clear { background: var(--green); }
+
+/* Диалог «Поставить метку?» */
+.ask-box {
+  position: fixed;
+  z-index: 1000;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+  padding: 16px;
+  min-width: 220px;
+  max-width: 280px;
+}
+.ask-question {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.ask-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.hidden { display: none; }
+
+/* Маркер-круг */
+.marker-dot {
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+/* Мобильная версия: крупные тап-таргеты, удобный диалог */
+@media (max-width: 600px) {
+  .ask-box {
+    min-width: 240px;
+    padding: 18px;
+  }
+  .ask-question {
+    font-size: 17px;
+  }
+  .btn {
+    min-height: 44px;
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 10px;
+  }
+  .popup-time { font-size: 14px; }
+  .popup-actions .btn { min-height: 40px; font-size: 15px; }
+}

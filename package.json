@@ -1,0 +1,9 @@
+{
+  "name": "ekat-markers",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Карта Екатеринбурга с метками (срок действия, продление, «чисто»)",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
