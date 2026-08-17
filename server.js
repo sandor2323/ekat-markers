@@ -298,8 +298,8 @@ const server = http.createServer(async (req, res) => {
     }
     const name = String(body.name || '').trim().slice(0, 30);
     const pass = String(body.pass || '');
-    if (!/^[\w\-]{1,30}$/.test(name)) {
-      return sendJson(res, 400, { error: 'Никнейм: 1-30 символов (буквы, цифры, _ , -)' });
+    if (!/^[^\s]{1,30}$/.test(name)) {
+      return sendJson(res, 400, { error: 'Никнейм: 1-30 символов, без пробелов' });
     }
     if (pass.length < 4) {
       return sendJson(res, 400, { error: 'Пароль: минимум 4 символа' });

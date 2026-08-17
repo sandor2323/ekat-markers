@@ -44,12 +44,18 @@ function fmtTime(ms) {
 /* ---------- API ---------- */
 
 async function api(path, options) {
-  const res = await fetch(path, options);
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.error || 'Ошибка запроса');
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 15000);
+  try {
+    const res = await fetch(path, { ...options, signal: ctrl.signal });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || 'Ошибка запроса');
+    }
+    return res.json();
+  } finally {
+    clearTimeout(timer);
   }
-  return res.json();
 }
 
 /* ---------- Метки на карте ---------- */
@@ -275,7 +281,9 @@ async function auth(path) {
     safeSetName(res.name, rememberBox.checked);
     document.getElementById('login').classList.add('hidden');
   } catch (e) {
-    loginError.textContent = e.message;
+    loginError.textContent = (e.name === 'AbortError')
+      ? 'Сервер не отвечает. Проверьте интернет и попробуйте ещё раз.'
+      : e.message;
   } finally {
     regBtn.disabled = false;
     loginBtn.disabled = false;
