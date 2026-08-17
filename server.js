@@ -263,9 +263,10 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
       return res.end('404 — страница не найдена');
     }
-    const cacheControl = file === '/index.html'
-      ? 'no-cache'
-      : 'public, max-age=86400';
+    // Меняющиеся файлы не кэшируем (чтобы правки сразу были видны);
+    // сторонние библиотеки в vendor/ можно кэшировать.
+    const isVendor = file.startsWith('/vendor/');
+    const cacheControl = isVendor ? 'public, max-age=86400' : 'no-cache';
     res.writeHead(200, {
       'Content-Type': MIME[path.extname(full).toLowerCase()] || 'application/octet-stream',
       'Cache-Control': cacheControl,
