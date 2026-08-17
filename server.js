@@ -288,6 +288,34 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  // ---- Совместимость: /api/auth (для старых версий клиента) ----
+  if (p === '/api/auth' && req.method === 'POST') {
+    let body;
+    try {
+      body = await readBody(req);
+    } catch (e) {
+      return sendJson(res, 400, { error: 'bad request' });
+    }
+    const name = String(body.name || '').trim().slice(0, 30);
+    const pass = String(body.pass || '');
+    if (!USE_SUPABASE) {
+      return sendJson(res, 200, { ok: true, name });
+    }
+    try {
+      const rows = await sbUsers(`?name=eq.${encodeURIComponent(name)}&select=*`);
+      if (rows.length === 0) {
+        await sbUsers('', { method: 'POST', body: JSON.stringify({ name, pass: hashPass(pass) }) });
+        return sendJson(res, 200, { ok: true, name });
+      }
+      if (verifyPass(pass, rows[0].pass)) {
+        return sendJson(res, 200, { ok: true, name });
+      }
+      return sendJson(res, 401, { error: 'Неверный пароль' });
+    } catch (e) {
+      return sendJson(res, e.status || 500, { error: e.message });
+    }
+  }
+
   // ---- Регистрация ----
   if (p === '/api/register' && req.method === 'POST') {
     let body;
