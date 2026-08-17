@@ -310,7 +310,7 @@ const server = http.createServer(async (req, res) => {
     try {
       const rows = await sbUsers(`?name=eq.${encodeURIComponent(name)}&select=*`);
       if (rows.length > 0) {
-        return sendJson(res, 409, { error: 'Никнейм уже занят' });
+        return sendJson(res, 409, { error: 'Никнейм уже занят. Если это ваш аккаунт — нажмите «Войти».' });
       }
       await sbUsers('', { method: 'POST', body: JSON.stringify({ name, pass: hashPass(pass) }) });
       return sendJson(res, 200, { ok: true, name });
