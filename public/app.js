@@ -9,7 +9,7 @@ const POLL_MS = 10 * 1000; // опрос сервера раз в 10 сек
 const RETINA = (window.devicePixelRatio || 1) >= 2;
 const TILE_SCALE = RETINA ? 2 : 1;
 
-const map = L.map('map', { attributionControl: false }).setView([56.8362, 60.5990], 14);
+const map = L.map('map', { attributionControl: false }).setView([56.8336, 60.5986], 15);
 
 L.tileLayer(
   'https://core-renderer-tiles.maps.yandex.net/tiles?l=map&v=21.10.5&x={x}&y={y}&z={z}&scale=' + TILE_SCALE + '&lang=ru_RU',
