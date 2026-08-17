@@ -288,8 +288,8 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // ---- Авторизация (вход/регистрация) ----
-  if (p === '/api/auth' && req.method === 'POST') {
+  // ---- Регистрация ----
+  if (p === '/api/register' && req.method === 'POST') {
     let body;
     try {
       body = await readBody(req);
@@ -305,14 +305,37 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 400, { error: 'Пароль: минимум 4 символа' });
     }
     if (!USE_SUPABASE) {
-      // Локально (без базы) — входим без проверки
+      return sendJson(res, 200, { ok: true, name });
+    }
+    try {
+      const rows = await sbUsers(`?name=eq.${encodeURIComponent(name)}&select=*`);
+      if (rows.length > 0) {
+        return sendJson(res, 409, { error: 'Никнейм уже занят' });
+      }
+      await sbUsers('', { method: 'POST', body: JSON.stringify({ name, pass: hashPass(pass) }) });
+      return sendJson(res, 200, { ok: true, name });
+    } catch (e) {
+      return sendJson(res, e.status || 500, { error: e.message });
+    }
+  }
+
+  // ---- Вход ----
+  if (p === '/api/login' && req.method === 'POST') {
+    let body;
+    try {
+      body = await readBody(req);
+    } catch (e) {
+      return sendJson(res, 400, { error: 'bad request' });
+    }
+    const name = String(body.name || '').trim().slice(0, 30);
+    const pass = String(body.pass || '');
+    if (!USE_SUPABASE) {
       return sendJson(res, 200, { ok: true, name });
     }
     try {
       const rows = await sbUsers(`?name=eq.${encodeURIComponent(name)}&select=*`);
       if (rows.length === 0) {
-        await sbUsers('', { method: 'POST', body: JSON.stringify({ name, pass: hashPass(pass) }) });
-        return sendJson(res, 200, { ok: true, name, registered: true });
+        return sendJson(res, 404, { error: 'Пользователь не найден. Сначала зарегистрируйтесь.' });
       }
       if (verifyPass(pass, rows[0].pass)) {
         return sendJson(res, 200, { ok: true, name });

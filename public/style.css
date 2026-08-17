@@ -226,6 +226,14 @@ html, body {
   width: 100%;
   min-height: 44px;
 }
+.login-btns {
+  display: flex;
+  gap: 10px;
+}
+.login-btns .btn {
+  flex: 1;
+  min-height: 44px;
+}
 
 /* Мобильная версия: крупные тап-таргеты, удобный диалог */
 @media (max-width: 600px) {

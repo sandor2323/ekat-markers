@@ -158,7 +158,7 @@ document.getElementById('ask-yes').addEventListener('click', async () => {
       body: JSON.stringify({
         lat: pendingLatLng.lat,
         lng: pendingLatLng.lng,
-        created_by: localStorage.getItem('name') || '',
+        created_by: safeGetName(),
       }),
     });
     closeDialogs();
@@ -227,11 +227,18 @@ refresh();
 
 /* ---------- Экран загрузки и вход ---------- */
 
+function safeGetName() {
+  try { return localStorage.getItem('name') || ''; } catch (e) { return ''; }
+}
+function safeSetName(name) {
+  try { localStorage.setItem('name', name); } catch (e) { /* приватный режим Safari */ }
+}
+
 // Экран загрузки: показываем 3 секунды, затем вход (если нет сохранённой сессии)
 setTimeout(() => {
   const splash = document.getElementById('splash');
   if (splash) splash.classList.add('hidden');
-  if (!localStorage.getItem('name')) {
+  if (!safeGetName()) {
     document.getElementById('login').classList.remove('hidden');
     document.getElementById('login-name').focus();
   }
@@ -239,32 +246,40 @@ setTimeout(() => {
 
 const loginNameInput = document.getElementById('login-name');
 const loginPassInput = document.getElementById('login-pass');
+const regBtn = document.getElementById('reg-btn');
 const loginBtn = document.getElementById('login-btn');
 const loginError = document.getElementById('login-error');
 
-async function doLogin() {
+async function auth(path) {
   const name = loginNameInput.value.trim();
   const pass = loginPassInput.value;
   loginError.textContent = '';
+  if (!name || !pass) {
+    loginError.textContent = 'Введи никнейм и пароль';
+    return;
+  }
+  regBtn.disabled = true;
   loginBtn.disabled = true;
   try {
-    const res = await api('/api/auth', {
+    const res = await api(path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, pass }),
     });
-    localStorage.setItem('name', res.name);
+    safeSetName(res.name);
     document.getElementById('login').classList.add('hidden');
   } catch (e) {
     loginError.textContent = e.message;
   } finally {
+    regBtn.disabled = false;
     loginBtn.disabled = false;
   }
 }
 
-loginBtn.addEventListener('click', doLogin);
+regBtn.addEventListener('click', () => auth('/api/register'));
+loginBtn.addEventListener('click', () => auth('/api/login'));
 loginPassInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') doLogin();
+  if (e.key === 'Enter') auth('/api/login');
 });
 loginNameInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') loginPassInput.focus();
