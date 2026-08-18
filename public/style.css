@@ -202,6 +202,43 @@ html, body {
   margin-bottom: 18px;
   text-align: center;
 }
+.login-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+  background: #101014;
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: 4px;
+}
+.login-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 9px 0;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.login-tab.active {
+  background: var(--accent);
+  color: #fff;
+}
+.login-success {
+  color: #2ecc40;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  margin: 2px 0 10px;
+  animation: successPop 0.3s ease;
+}
+@keyframes successPop {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
 .login-input {
   width: 100%;
   background: #101014;

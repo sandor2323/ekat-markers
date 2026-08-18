@@ -24,16 +24,20 @@
   <!-- Окно входа -->
   <div id="login" class="login hidden">
     <form id="login-form" class="login-box" autocomplete="off">
-      <div class="login-title">Вход</div>
+      <div class="login-tabs">
+        <button type="button" id="tab-login" class="login-tab active">Вход</button>
+        <button type="button" id="tab-reg" class="login-tab">Регистрация</button>
+      </div>
+      <div id="login-title" class="login-title">Вход</div>
       <input id="login-name" class="login-input" type="text" placeholder="Никнейм" maxlength="30" autocomplete="username">
       <input id="login-pass" class="login-input" type="password" placeholder="Пароль" autocomplete="current-password">
       <div id="login-error" class="login-error"></div>
+      <div id="login-success" class="login-success hidden">Успешно</div>
       <label class="login-remember">
         <input type="checkbox" id="remember-box" checked>
         Запомнить меня
       </label>
       <div class="login-btns">
-        <button type="button" id="reg-btn" class="btn btn-no">Регистрация</button>
         <button type="submit" id="login-btn" class="btn btn-yes">Войти</button>
       </div>
     </form>
@@ -49,6 +53,6 @@
   </div>
 
   <script src="vendor/leaflet.js"></script>
-  <script src="app.js?v=11"></script>
+  <script src="app.js?v=12"></script>
 </body>
 </html>

@@ -268,20 +268,39 @@ setTimeout(() => {
 const loginForm = document.getElementById('login-form');
 const loginNameInput = document.getElementById('login-name');
 const loginPassInput = document.getElementById('login-pass');
-const regBtn = document.getElementById('reg-btn');
 const loginBtn = document.getElementById('login-btn');
 const loginError = document.getElementById('login-error');
+const loginSuccess = document.getElementById('login-success');
+const loginTitle = document.getElementById('login-title');
 const rememberBox = document.getElementById('remember-box');
+const tabLogin = document.getElementById('tab-login');
+const tabReg = document.getElementById('tab-reg');
+
+let authMode = 'login'; // 'login' | 'register'
+
+function setAuthMode(mode) {
+  authMode = mode;
+  tabLogin.classList.toggle('active', mode === 'login');
+  tabReg.classList.toggle('active', mode === 'register');
+  loginTitle.textContent = mode === 'login' ? 'Вход' : 'Регистрация';
+  loginBtn.textContent = mode === 'login' ? 'Войти' : 'Зарегистрироваться';
+  loginPassInput.autocomplete = mode === 'login' ? 'current-password' : 'new-password';
+  loginError.textContent = '';
+  loginSuccess.classList.add('hidden');
+}
+
+tabLogin.addEventListener('click', () => setAuthMode('login'));
+tabReg.addEventListener('click', () => setAuthMode('register'));
 
 async function auth(path) {
   const name = loginNameInput.value.trim();
   const pass = loginPassInput.value;
   loginError.textContent = '';
+  loginSuccess.classList.add('hidden');
   if (!name || !pass) {
     loginError.textContent = 'Введи никнейм и пароль';
     return;
   }
-  regBtn.disabled = true;
   loginBtn.disabled = true;
   loginError.textContent = 'Подключение...';
   try {
@@ -290,20 +309,25 @@ async function auth(path) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, pass }),
     });
+    // Сохраняем сессию (регистрация уже возвращает токен — вход автоматический)
     safeSetAuth(res.name, res.token, rememberBox.checked);
-    document.getElementById('login').classList.add('hidden');
+    loginError.textContent = '';
+    loginSuccess.textContent = 'Успешно';
+    loginSuccess.classList.remove('hidden');
+    setTimeout(() => {
+      document.getElementById('login').classList.add('hidden');
+    }, 1200);
   } catch (e) {
+    loginSuccess.classList.add('hidden');
     loginError.textContent = (e.name === 'AbortError')
       ? 'Сервер просыпается. Подождите 30–60 секунд и нажмите ещё раз.'
       : e.message;
   } finally {
-    regBtn.disabled = false;
     loginBtn.disabled = false;
   }
 }
 
 loginForm.addEventListener('submit', (e) => {
   e.preventDefault();
-  auth('/api/login');
+  auth(authMode === 'login' ? '/api/login' : '/api/register');
 });
-regBtn.addEventListener('click', () => auth('/api/register'));
