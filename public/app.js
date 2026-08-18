@@ -170,6 +170,7 @@ document.addEventListener('click', async (e) => {
   // «Удалить» — через стилизованный диалог подтверждения
   if (act === 'delete') {
     pendingDeleteId = id;
+    map.closePopup(); // попап метки закрываем сразу — остаётся только диалог
     showDialog(confirmBox, { x: e.clientX, y: e.clientY });
     return;
   }
@@ -246,11 +247,16 @@ document.getElementById('confirm-yes').addEventListener('click', async () => {
   const id = pendingDeleteId;
   confirmBox.classList.add('hidden');
   pendingDeleteId = null;
+  map.closePopup(); // окна диалогов закрыты
+  // Оптимистично: метка исчезает СРАЗУ, сервер подтверждает в фоне
+  markers = markers.filter((m) => m.id !== id);
+  renderAll();
   try {
     await api(`/api/markers/${id}/delete`, { method: 'POST', headers: authHeaders() });
     await refresh();
   } catch (err) {
     alert(err.message);
+    await refresh(); // при ошибке вернём актуальное состояние с сервера
   }
 });
 
