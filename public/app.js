@@ -60,9 +60,12 @@ function fmtTime(ms) {
 
 /* ---------- API ---------- */
 
-async function api(path, options, retries = 2) {
+// Паузы между автоповторами запроса (контейнер может «просыпаться» до ~10с)
+const RETRY_DELAYS = [1000, 2000, 4000, 8000];
+
+async function api(path, options, attempt = 0) {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 60000);
+  const timer = setTimeout(() => ctrl.abort(), 30000);
   try {
     const res = await fetch(path, { ...options, signal: ctrl.signal });
     const text = await res.text();
@@ -72,19 +75,20 @@ async function api(path, options, retries = 2) {
       catch (e) { throw new Error('Сервер вернул неожиданный ответ'); }
     }
     if (!res.ok) {
-      // 5xx — контейнер может «просыпаться»: повторяем через паузу
-      if (retries > 0 && res.status >= 500) {
-        await new Promise((r) => setTimeout(r, 1500));
-        return api(path, options, retries - 1);
+      // 5xx — контейнер «просыпается»: повторяем с растущей паузой
+      if (attempt < RETRY_DELAYS.length && res.status >= 500) {
+        await new Promise((r) => setTimeout(r, RETRY_DELAYS[attempt]));
+        return api(path, options, attempt + 1);
       }
       throw new Error((data && data.error) || 'Ошибка запроса');
     }
     return data;
   } catch (err) {
-    // Таймаут (сеть/пробуждение) — тоже пробуем ещё раз
-    if (retries > 0 && err.name === 'AbortError') {
-      await new Promise((r) => setTimeout(r, 1500));
-      return api(path, options, retries - 1);
+    // Сетевая ошибка («Failed to fetch») или таймаут — тоже повторяем
+    if (attempt < RETRY_DELAYS.length &&
+        (err.name === 'AbortError' || err instanceof TypeError)) {
+      await new Promise((r) => setTimeout(r, RETRY_DELAYS[attempt]));
+      return api(path, options, attempt + 1);
     }
     throw err;
   } finally {
