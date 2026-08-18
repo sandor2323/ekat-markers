@@ -396,8 +396,12 @@ const server = http.createServer(async (req, res) => {
     try {
       const existing = await storage.get(id);
       if (!existing) throw httpErr(404, 'not found');
-      if (existing.status !== 'active') throw httpErr(400, 'only active markers can be ' + (act === 'renew' ? 'renewed' : (act === 'clear' ? 'cleared' : 'deleted')));
-      if (existing.expires_at <= Date.now()) throw httpErr(404, 'expired');
+      // «Удалить» доступен для ЛЮБОЙ метки (активной или зелёной);
+      // «Продлить»/«Чисто» — только для активной.
+      if (act !== 'delete' && existing.status !== 'active') {
+        throw httpErr(400, 'only active markers can be ' + (act === 'renew' ? 'renewed' : 'cleared'));
+      }
+      if (act !== 'delete' && existing.expires_at <= Date.now()) throw httpErr(404, 'expired');
       // «Чисто» и «Удалить» — только пользователям из списка ALLOWED_CLEAR_USERS
       if (act !== 'renew' && ALLOWED_CLEAR_USERS.length > 0) {
         if (!USE_SUPABASE) throw httpErr(403, '«Чисто» и «Удалить» доступны только определённым пользователям');
