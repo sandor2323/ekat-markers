@@ -18,6 +18,28 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const EMAIL_DOMAIN = '@users.kartalgcekb.ru';
 const USE_SUPABASE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
+// Служебный email из никнейма: кириллица -> латиница (база принимает только ASCII).
+function nickToEmail(name) {
+  const ruMap = {
+    а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'e', ж: 'zh', з: 'z',
+    и: 'i', й: 'y', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r',
+    с: 's', т: 't', у: 'u', ф: 'f', х: 'h', ц: 'ts', ч: 'ch', ш: 'sh',
+    щ: 'sch', ъ: '', ы: 'y', ь: '', э: 'e', ю: 'yu', я: 'ya',
+  };
+  let ascii = '';
+  for (const ch of String(name).toLowerCase()) {
+    ascii += (ruMap[ch] !== undefined ? ruMap[ch] : ch);
+  }
+  ascii = ascii.replace(/[^a-z0-9._-]/g, '').replace(/^[^a-z0-9]+/, '');
+  if (!ascii) {
+    // Фолбэк: детерминированный ASCII-хэш (например, ник из одних цифр)
+    let h = 0;
+    for (const ch of String(name)) h = (h * 31 + ch.codePointAt(0)) >>> 0;
+    ascii = 'user' + h.toString(36);
+  }
+  return ascii + EMAIL_DOMAIN;
+}
+
 function httpErr(status, message) {
   const e = new Error(message);
   e.status = status;
@@ -53,7 +75,7 @@ async function sbFetch(path, options = {}, token) {
 }
 
 async function registerUser(name, pass) {
-  const email = name + EMAIL_DOMAIN;
+  const email = nickToEmail(name);
   // Создаём пользователя через Admin API (service_role)
   const user = await sbFetch('/auth/v1/admin/users', {
     method: 'POST',
@@ -71,7 +93,7 @@ async function registerUser(name, pass) {
 }
 
 async function loginUser(name, pass) {
-  const email = name + EMAIL_DOMAIN;
+  const email = nickToEmail(name);
   const res = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=password', {
     method: 'POST',
     headers: {
