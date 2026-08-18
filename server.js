@@ -18,6 +18,12 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const EMAIL_DOMAIN = '@users.kartalgcekb.ru';
 const USE_SUPABASE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
+// Кому разрешена кнопка «Чисто» (никнеймы через запятую, регистр не важен).
+// Пусто = разрешено всем (поведение по умолчанию). Задаётся в переменной
+// окружения ALLOWED_CLEAR_USERS (в панели Amvera: Настройки → Переменные).
+const ALLOWED_CLEAR_USERS = (process.env.ALLOWED_CLEAR_USERS || '')
+  .split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+
 // Служебный email из никнейма: кириллица -> латиница (база принимает только ASCII).
 function nickToEmail(name) {
   const ruMap = {
@@ -299,6 +305,14 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  // ---- Конфигурация для клиента (видимость кнопки «Чисто») ----
+  if (p === '/api/config' && req.method === 'GET') {
+    return sendJson(res, 200, {
+      allowedClear: ALLOWED_CLEAR_USERS,
+      clearAll: ALLOWED_CLEAR_USERS.length === 0,
+    });
+  }
+
   // ---- Метки: список ----
   if (p === '/api/markers' && req.method === 'GET') {
     try {
@@ -357,6 +371,17 @@ const server = http.createServer(async (req, res) => {
       if (!existing) throw httpErr(404, 'not found');
       if (existing.status !== 'active') throw httpErr(400, 'only active markers can be ' + (act === 'renew' ? 'renewed' : 'cleared'));
       if (existing.expires_at <= Date.now()) throw httpErr(404, 'expired');
+      // «Чисто» — только пользователям из списка ALLOWED_CLEAR_USERS
+      if (act === 'clear' && ALLOWED_CLEAR_USERS.length > 0) {
+        if (!USE_SUPABASE) throw httpErr(403, '«Чисто» доступно только определённым пользователям');
+        const token = bearerToken(req);
+        if (!token) throw httpErr(401, 'Требуется вход');
+        const user = await userFromToken(token);
+        const nick = String(await nicknameOf(user.id, token) || '').toLowerCase();
+        if (!ALLOWED_CLEAR_USERS.includes(nick)) {
+          throw httpErr(403, 'Нет прав: «Чисто» доступно только определённым пользователям');
+        }
+      }
       const patch = act === 'renew'
         ? { expires_at: existing.expires_at + HALF_HOUR }
         : { status: 'cleared', expires_at: Date.now() + 2 * HOUR };

@@ -4,6 +4,10 @@ const LIFETIME = 2 * 60 * 60 * 1000; // 2 часа
 const RENEW_TIME = 30 * 60 * 1000; // +30 минут
 const POLL_MS = 10 * 1000; // опрос сервера раз в 10 сек
 
+// Права на «Чисто»: список разрешённых ников приходит с сервера (/api/config).
+let allowedClear = [];
+let clearAll = true;
+
 // Карта ограничена Екатеринбургом: minZoom не даёт отдалиться за пределы города,
 // maxBounds не даёт уехать за границы области.
 const map = L.map('map', {
@@ -72,6 +76,19 @@ async function api(path, options) {
 
 /* ---------- Метки на карте ---------- */
 
+// Может ли текущий пользователь нажимать «Чисто» (по списку с сервера)
+function canClear() {
+  if (clearAll) return true;
+  const nick = String(safeGetName() || '').toLowerCase();
+  return allowedClear.includes(nick);
+}
+
+// Список разрешённых ников подтягиваем при загрузке страницы
+api('/api/config').then((cfg) => {
+  allowedClear = (cfg.allowedClear || []).map((s) => s.toLowerCase());
+  clearAll = !!cfg.clearAll;
+}).catch(() => {});
+
 const layerGroup = L.layerGroup().addTo(map);
 let markers = [];
 
@@ -96,7 +113,7 @@ function popupHtml(m) {
     ? ''
     : `<div class="popup-actions">
         <button class="btn btn-renew" data-act="renew" data-id="${m.id}">Продлить +30 мин</button>
-        <button class="btn btn-clear" data-act="clear" data-id="${m.id}">Чисто</button>
+        ${canClear() ? `<button class="btn btn-clear" data-act="clear" data-id="${m.id}">Чисто</button>` : ''}
        </div>`;
   const textHtml = m.text ? `<div class="popup-text">${esc(m.text)}</div>` : '';
   const authorHtml = m.created_by
