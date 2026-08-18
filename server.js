@@ -33,14 +33,23 @@ async function sbFetch(path, options = {}, token) {
       apikey: SUPABASE_ANON_KEY,
       Authorization: 'Bearer ' + (token || SUPABASE_ANON_KEY),
       'Content-Type': 'application/json',
+      Accept: 'application/json',
       ...(options.headers || {}),
     },
+    signal: AbortSignal.timeout(20000),
   });
   if (!res.ok) {
     const t = await res.text().catch(() => '');
     throw httpErr(res.status, 'db/auth error: ' + t.slice(0, 200));
   }
-  return res.json();
+  // База может ответить 204 No Content (пустое тело) — это не ошибка.
+  const text = await res.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    throw httpErr(502, 'bad json from db: ' + text.slice(0, 100));
+  }
 }
 
 async function registerUser(name, pass) {
@@ -50,6 +59,9 @@ async function registerUser(name, pass) {
     method: 'POST',
     body: JSON.stringify({ email, password: pass, email_confirm: true }),
   }, SUPABASE_SERVICE_KEY);
+  if (!user || !user.id) {
+    throw httpErr(502, 'Сервис регистрации не вернул ответ (проверьте SUPABASE_SERVICE_KEY)');
+  }
   // Профиль: никнейм
   await sbFetch('/rest/v1/profiles', {
     method: 'POST',
@@ -67,20 +79,27 @@ async function loginUser(name, pass) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ email, password: pass }),
+    signal: AbortSignal.timeout(20000),
   });
   if (!res.ok) {
     throw httpErr(401, 'Неверный никнейм или пароль');
   }
-  const data = await res.json();
+  const data = await res.json().catch(() => null);
+  if (!data || !data.access_token) {
+    throw httpErr(502, 'Сервис входа не вернул токен');
+  }
   return data.access_token;
 }
 
 async function userFromToken(token) {
   const res = await fetch(SUPABASE_URL + '/auth/v1/user', {
     headers: { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + token },
+    signal: AbortSignal.timeout(20000),
   });
   if (!res.ok) throw httpErr(401, 'Требуется вход');
-  return res.json();
+  const data = await res.json().catch(() => null);
+  if (!data) throw httpErr(502, 'Сервис входа не ответил');
+  return data;
 }
 
 async function nicknameOf(userId, token) {
@@ -101,8 +120,12 @@ async function nicknameOf(userId, token) {
 const supabaseStorage = {
   async list() {
     const now = Date.now();
-    await sbFetch(`/rest/v1/markers?expires_at=lte.${now}`, { method: 'DELETE' });
-    return sbFetch('/rest/v1/markers?select=*&order=created_at.asc');
+    await sbFetch(`/rest/v1/markers?expires_at=lte.${now}`, {
+      method: 'DELETE',
+      headers: { Prefer: 'return=representation' },
+    });
+    const rows = await sbFetch('/rest/v1/markers?select=*&order=created_at.asc');
+    return rows || [];
   },
   async create(marker, token) {
     const rows = await sbFetch('/rest/v1/markers', {
