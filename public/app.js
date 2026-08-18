@@ -151,15 +151,18 @@ document.addEventListener('click', async (e) => {
   if (!btn) return;
   const id = btn.dataset.id;
   const act = btn.dataset.act;
-  if (act === 'delete' && !confirm('Удалить метку?')) return;
+  // «Удалить» — через стилизованный диалог подтверждения
+  if (act === 'delete') {
+    pendingDeleteId = id;
+    showDialog(confirmBox, { x: e.clientX, y: e.clientY });
+    return;
+  }
   btn.disabled = true;
   try {
     if (act === 'renew') {
       await api(`/api/markers/${id}/renew`, { method: 'POST', headers: authHeaders() });
     } else if (act === 'clear') {
       await api(`/api/markers/${id}/clear`, { method: 'POST', headers: authHeaders() });
-    } else if (act === 'delete') {
-      await api(`/api/markers/${id}/delete`, { method: 'POST', headers: authHeaders() });
     }
     await refresh();
   } catch (err) {
@@ -170,11 +173,15 @@ document.addEventListener('click', async (e) => {
 /* ---------- Диалог «Поставить метку?» ---------- */
 
 const askBox = document.getElementById('ask-box');
+const confirmBox = document.getElementById('confirm-box');
 let pendingLatLng = null;
+let pendingDeleteId = null;
 
 function closeDialogs() {
   askBox.classList.add('hidden');
+  confirmBox.classList.add('hidden');
   pendingLatLng = null;
+  pendingDeleteId = null;
 }
 
 function showDialog(box, point) {
@@ -216,6 +223,25 @@ document.getElementById('ask-yes').addEventListener('click', async () => {
 });
 
 document.getElementById('ask-no').addEventListener('click', closeDialogs);
+
+// Подтверждение удаления метки
+document.getElementById('confirm-yes').addEventListener('click', async () => {
+  if (!pendingDeleteId) return;
+  const id = pendingDeleteId;
+  confirmBox.classList.add('hidden');
+  pendingDeleteId = null;
+  try {
+    await api(`/api/markers/${id}/delete`, { method: 'POST', headers: authHeaders() });
+    await refresh();
+  } catch (err) {
+    alert(err.message);
+  }
+});
+
+document.getElementById('confirm-no').addEventListener('click', () => {
+  confirmBox.classList.add('hidden');
+  pendingDeleteId = null;
+});
 
 // Закрытие по клику мимо или по Esc
 document.addEventListener('mousedown', (e) => {
