@@ -7,5 +7,4 @@ data/cache/
 temp/
 *.md
 modify-style.mjs
-amvera.yml
 fly.toml
