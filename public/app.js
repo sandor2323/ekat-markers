@@ -116,9 +116,9 @@ document.addEventListener('click', async (e) => {
   btn.disabled = true;
   try {
     if (act === 'renew') {
-      await api(`/api/markers/${id}/renew`, { method: 'POST' });
+      await api(`/api/markers/${id}/renew`, { method: 'POST', headers: authHeaders() });
     } else if (act === 'clear') {
-      await api(`/api/markers/${id}/clear`, { method: 'POST' });
+      await api(`/api/markers/${id}/clear`, { method: 'POST', headers: authHeaders() });
     }
     await refresh();
   } catch (err) {
@@ -160,7 +160,7 @@ document.getElementById('ask-yes').addEventListener('click', async () => {
   try {
     await api('/api/markers', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({
         lat: pendingLatLng.lat,
         lng: pendingLatLng.lng,
@@ -236,11 +236,23 @@ refresh();
 function safeGetName() {
   try { return localStorage.getItem('name') || sessionStorage.getItem('name') || ''; } catch (e) { return ''; }
 }
-function safeSetName(name, remember) {
+function safeGetToken() {
+  try { return localStorage.getItem('token') || sessionStorage.getItem('token') || ''; } catch (e) { return ''; }
+}
+function safeSetAuth(name, token, remember) {
   try {
-    if (remember) localStorage.setItem('name', name);
-    else sessionStorage.setItem('name', name);
+    if (remember) {
+      localStorage.setItem('name', name);
+      localStorage.setItem('token', token);
+    } else {
+      sessionStorage.setItem('name', name);
+      sessionStorage.setItem('token', token);
+    }
   } catch (e) { /* приватный режим Safari */ }
+}
+function authHeaders() {
+  const token = safeGetToken();
+  return token ? { Authorization: 'Bearer ' + token } : {};
 }
 
 // Экран загрузки: показываем 3 секунды, затем вход (если нет сохранённой сессии)
@@ -278,7 +290,7 @@ async function auth(path) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, pass }),
     });
-    safeSetName(res.name, rememberBox.checked);
+    safeSetAuth(res.name, res.token, rememberBox.checked);
     document.getElementById('login').classList.add('hidden');
   } catch (e) {
     loginError.textContent = (e.name === 'AbortError')
