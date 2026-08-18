@@ -39,14 +39,9 @@ function esc(s) {
   }[c]));
 }
 
-// Цвет активной метки: 100% остатка = красный, 0% = синий (плавно).
-function activeColor(expiresAt) {
-  const remain = Math.max(0, expiresAt - Date.now());
-  const t = Math.min(1, remain / LIFETIME);
-  const r = Math.round(255 * t);
-  const b = Math.round(255 * (1 - t));
-  return `rgb(${r}, 30, ${b})`;
-}
+// Цвет активной метки: всегда красный (плавный переход в синий убран
+// по требованию пользователя).
+const ACTIVE_COLOR = '#ff3333';
 
 function fmtTime(ms) {
   const total = Math.max(0, Math.ceil(ms / 1000));
@@ -116,7 +111,7 @@ let markers = [];
 
 function markerIcon(m) {
   const size = m.status === 'cleared' ? 18 : 16;
-  const color = m.status === 'cleared' ? '#2ecc40' : activeColor(m.expires_at);
+  const color = m.status === 'cleared' ? '#2ecc40' : ACTIVE_COLOR;
   return L.divIcon({
     className: '',
     html: `<div class="marker-dot" style="width:${size}px;height:${size}px;background:${color}"></div>`,
