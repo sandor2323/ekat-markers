@@ -246,6 +246,7 @@ async function refresh() {
     const data = await api('/api/markers');
     markers = data;
     renderAll();
+    hideSplash(); // метки отрисованы — убираем загрузочный экран сразу
   } catch (err) {
     console.error('Не удалось обновить метки:', err);
   }
@@ -306,15 +307,23 @@ if (splashHello && safeGetName()) {
   splashHello.classList.remove('hidden');
 }
 
-// Экран загрузки: показываем 3 секунды, затем вход (если нет сохранённой сессии)
-setTimeout(() => {
+// Экран загрузки: скрывается, как только метки отрисовались (вызов hideSplash
+// из refresh), либо по таймауту 6 секунд, чтобы сайт не остался заблокирован,
+// если API вдруг не ответит. После скрытия показываем вход, если не вошёл.
+let splashDone = false;
+function hideSplash() {
+  if (splashDone) return;
+  splashDone = true;
   const splash = document.getElementById('splash');
   if (splash) splash.classList.add('hidden');
   if (!safeGetName()) {
-    document.getElementById('login').classList.remove('hidden');
-    document.getElementById('login-name').focus();
+    const login = document.getElementById('login');
+    if (login) login.classList.remove('hidden');
+    const nameInput = document.getElementById('login-name');
+    if (nameInput) nameInput.focus();
   }
-}, 3000);
+}
+setTimeout(hideSplash, 6000); // страховка
 
 const loginForm = document.getElementById('login-form');
 const loginNameInput = document.getElementById('login-name');
