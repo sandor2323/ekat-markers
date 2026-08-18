@@ -35,7 +35,9 @@ html, body {
 #map {
   position: absolute;
   inset: 0;
-  background: #0d0d0f;
+  /* Фон под цвет тёмных тайлов Яндекса: пока тайлы грузятся, пустые
+     области не выглядят чёрными «дырами», а сливаются с картой. */
+  background: #1b1b20;
 }
 
 .leaflet-container {

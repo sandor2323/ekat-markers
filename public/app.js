@@ -15,7 +15,13 @@ const map = L.map('map', {
   minZoom: 12,
   maxBounds: [[56.60, 60.30], [57.05, 61.00]],
   maxBoundsViscosity: 1.0,
-}).setView([56.8342, 60.6000], 15);
+}).setView([56.8342, 60.6000], 14);
+
+// Быстрый первый кадр: стартуем с zoom 14 (тайлов в 4 раза меньше, карта
+// заполняется за секунду), затем плавно приближаемся к рабочему zoom 15.
+setTimeout(() => {
+  if (map.getZoom() < 15) map.flyTo([56.8342, 60.6000], 15, { duration: 1.2 });
+}, 800);
 
 L.tileLayer(
   'https://core-renderer-tiles.maps.yandex.net/tiles?l=map&v=21.10.5&x={x}&y={y}&z={z}&scale=1&lang=ru_RU&projection=web_mercator',
