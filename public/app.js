@@ -100,6 +100,13 @@ function canAdmin() {
   return allowedClear.includes(nick);
 }
 
+// Может ли пользователь удалить метку: админ ИЛИ автор метки
+function canDelete(m) {
+  if (canAdmin()) return true;
+  const nick = String(safeGetName() || '').toLowerCase();
+  return !!nick && String(m.created_by || '').toLowerCase() === nick;
+}
+
 // Список разрешённых ников подтягиваем при загрузке страницы
 api('/api/config').then((cfg) => {
   allowedClear = (cfg.allowedClear || []).map((s) => s.toLowerCase());
@@ -128,12 +135,12 @@ function popupHtml(m) {
     : `<div class="popup-time">Осталось: ${fmtTime(remain)}</div>`;
   const actions = cleared
     ? `<div class="popup-actions">
-        ${canAdmin() ? `<button class="btn btn-del" data-act="delete" data-id="${m.id}">Удалить</button>` : ''}
+        ${canDelete(m) ? `<button class="btn btn-del" data-act="delete" data-id="${m.id}">Удалить</button>` : ''}
        </div>`
     : `<div class="popup-actions">
         <button class="btn btn-renew" data-act="renew" data-id="${m.id}">Продлить +30 мин</button>
         ${canAdmin() ? `<button class="btn btn-clear" data-act="clear" data-id="${m.id}">Чисто</button>` : ''}
-        ${canAdmin() ? `<button class="btn btn-del" data-act="delete" data-id="${m.id}">Удалить</button>` : ''}
+        ${canDelete(m) ? `<button class="btn btn-del" data-act="delete" data-id="${m.id}">Удалить</button>` : ''}
        </div>`;
   const textHtml = m.text ? `<div class="popup-text">${esc(m.text)}</div>` : '';
   const authorHtml = m.created_by

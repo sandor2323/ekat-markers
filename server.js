@@ -435,15 +435,24 @@ const server = http.createServer(async (req, res) => {
         throw httpErr(400, 'only active markers can be ' + (act === 'renew' ? 'renewed' : 'cleared'));
       }
       if (act !== 'delete' && existing.expires_at <= Date.now()) throw httpErr(404, 'expired');
-      // «Чисто» и «Удалить» — только пользователям из списка ALLOWED_CLEAR_USERS
+      // Права: «Чисто» — только админам (ALLOWED_CLEAR_USERS); «Удалить» —
+      // админу ИЛИ автору метки (свою метку удаляет сам пользователь).
       if (act !== 'renew' && ALLOWED_CLEAR_USERS.length > 0) {
         if (!USE_SUPABASE) throw httpErr(403, '«Чисто» и «Удалить» доступны только определённым пользователям');
         const token = bearerToken(req);
         if (!token) throw httpErr(401, 'Требуется вход');
         const user = await userFromToken(token);
         const nick = String(await nicknameOf(user.id, token) || '').toLowerCase();
-        if (!ALLOWED_CLEAR_USERS.includes(nick)) {
-          throw httpErr(403, 'Нет прав: «Чисто» и «Удалить» доступны только определённым пользователям');
+        const isAdmin = ALLOWED_CLEAR_USERS.includes(nick);
+        if (act === 'delete') {
+          // Автор метки (user_id) или админ
+          const isOwner = !!(existing.user_id && user.id &&
+            String(existing.user_id) === String(user.id));
+          if (!isAdmin && !isOwner) {
+            throw httpErr(403, 'Удалять можно только свои метки');
+          }
+        } else if (!isAdmin) {
+          throw httpErr(403, 'Нет прав: «Чисто» доступно только определённым пользователям');
         }
       }
       if (act === 'delete') {
