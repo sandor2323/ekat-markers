@@ -118,6 +118,27 @@ html, body {
 .btn-clear { background: var(--green); }
 .btn-del { background: #c0392b; }
 
+/* Подсказка для мобильных: только на тач-устройствах (pointer: coarse),
+   без фона, мелко и полупрозрачно; клики сквозь неё проходят. */
+#hint-mobile {
+  display: none;
+  position: fixed;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  text-align: center;
+  max-width: 90vw;
+  pointer-events: none;
+  user-select: none;
+}
+@media (pointer: coarse) {
+  #hint-mobile { display: block; }
+}
+
 /* Диалог «Поставить метку?» */
 .ask-box {
   position: fixed;
