@@ -144,15 +144,32 @@ async function nicknameOf(userId, token) {
 
 /* ---------- Хранилище меток ---------- */
 
+// Кэш списка меток: посетителям отдаём список МГНОВЕННО (без запроса к
+// Supabase, который занимает 0.4-1с). Кэш обновляется максимум раз в
+// MARKERS_CACHE_TTL мс, а при создании/изменении/удалении метки — сразу.
+const MARKERS_CACHE_TTL = 3000;
+let markersCache = { ts: 0, list: null };
+
+async function cachedList() {
+  const now = Date.now();
+  if (markersCache.list && now - markersCache.ts < MARKERS_CACHE_TTL) {
+    return markersCache.list;
+  }
+  const rows = await sbFetch(
+    `/rest/v1/markers?select=*&expires_at=gt.${now}&order=created_at.asc`
+  );
+  markersCache = { ts: Date.now(), list: rows || [] };
+  return markersCache.list;
+}
+
+function invalidateCache() {
+  markersCache = { ts: 0, list: null };
+}
+
 // Supabase: RLS проверяет auth.uid() === user_id
 const supabaseStorage = {
   async list() {
-    // Истёкшие метки не показываем (фильтр вместо DELETE — в 2 раза быстрее:
-    // один запрос к базе вместо двух). Удаляются фоновой чисткой ниже.
-    const rows = await sbFetch(
-      `/rest/v1/markers?select=*&expires_at=gt.${Date.now()}&order=created_at.asc`
-    );
-    return rows || [];
+    return cachedList();
   },
   async create(marker, token) {
     const rows = await sbFetch('/rest/v1/markers', {
@@ -160,6 +177,7 @@ const supabaseStorage = {
       body: JSON.stringify(marker),
       headers: { Prefer: 'return=representation' },
     }, token);
+    invalidateCache();
     return rows[0];
   },
   async update(id, patch, token) {
@@ -173,6 +191,7 @@ const supabaseStorage = {
       // запрещает UPDATE. Отдаём понятную ошибку, а не пустое тело.
       throw httpErr(502, 'Метка не обновлена в базе: запись не найдена или политика доступа (RLS) запрещает изменение. Проверьте политики UPDATE в Supabase.');
     }
+    invalidateCache();
     return rows[0];
   },
   async delete(id, token) {
@@ -181,6 +200,7 @@ const supabaseStorage = {
       headers: { Prefer: 'return=representation' },
     }, token);
     if (!rows || rows.length === 0) throw httpErr(404, 'not found');
+    invalidateCache();
     return rows[0];
   },
   async get(id) {
@@ -485,4 +505,7 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, () => {
   console.log(`Карта запущена: http://localhost:${PORT}`);
   console.log(`Хранилище: ${USE_SUPABASE ? 'Supabase (Auth + RLS)' : 'файл (локально)'}`);
+  // Прогрев кэша меток при старте: первый посетитель получает список
+  // мгновенно, без ожидания запроса к базе.
+  if (USE_SUPABASE) cachedList().catch(() => {});
 });
