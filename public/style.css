@@ -114,6 +114,7 @@ html, body {
 .btn-no { background: #55555e; }
 .btn-renew { background: #8a6d1a; }
 .btn-clear { background: var(--green); }
+.btn-del { background: #c0392b; }
 
 /* Диалог «Поставить метку?» */
 .ask-box {

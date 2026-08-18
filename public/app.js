@@ -76,8 +76,8 @@ async function api(path, options) {
 
 /* ---------- Метки на карте ---------- */
 
-// Может ли текущий пользователь нажимать «Чисто» (по списку с сервера)
-function canClear() {
+// Может ли текущий пользователь администрировать метки («Чисто»/«Удалить»)
+function canAdmin() {
   if (clearAll) return true;
   const nick = String(safeGetName() || '').toLowerCase();
   return allowedClear.includes(nick);
@@ -110,10 +110,13 @@ function popupHtml(m) {
     ? `<div class="popup-time dim">Закрыто, осталось ${fmtTime(remain)}</div>`
     : `<div class="popup-time">Осталось: ${fmtTime(remain)}</div>`;
   const actions = cleared
-    ? ''
+    ? `<div class="popup-actions">
+        ${canAdmin() ? `<button class="btn btn-del" data-act="delete" data-id="${m.id}">Удалить</button>` : ''}
+       </div>`
     : `<div class="popup-actions">
         <button class="btn btn-renew" data-act="renew" data-id="${m.id}">Продлить +30 мин</button>
-        ${canClear() ? `<button class="btn btn-clear" data-act="clear" data-id="${m.id}">Чисто</button>` : ''}
+        ${canAdmin() ? `<button class="btn btn-clear" data-act="clear" data-id="${m.id}">Чисто</button>` : ''}
+        ${canAdmin() ? `<button class="btn btn-del" data-act="delete" data-id="${m.id}">Удалить</button>` : ''}
        </div>`;
   const textHtml = m.text ? `<div class="popup-text">${esc(m.text)}</div>` : '';
   const authorHtml = m.created_by
@@ -142,12 +145,15 @@ document.addEventListener('click', async (e) => {
   if (!btn) return;
   const id = btn.dataset.id;
   const act = btn.dataset.act;
+  if (act === 'delete' && !confirm('Удалить метку?')) return;
   btn.disabled = true;
   try {
     if (act === 'renew') {
       await api(`/api/markers/${id}/renew`, { method: 'POST', headers: authHeaders() });
     } else if (act === 'clear') {
       await api(`/api/markers/${id}/clear`, { method: 'POST', headers: authHeaders() });
+    } else if (act === 'delete') {
+      await api(`/api/markers/${id}/delete`, { method: 'POST', headers: authHeaders() });
     }
     await refresh();
   } catch (err) {

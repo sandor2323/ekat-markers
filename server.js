@@ -175,6 +175,14 @@ const supabaseStorage = {
     }
     return rows[0];
   },
+  async delete(id, token) {
+    const rows = await sbFetch(`/rest/v1/markers?id=eq.${id}`, {
+      method: 'DELETE',
+      headers: { Prefer: 'return=representation' },
+    }, token);
+    if (!rows || rows.length === 0) throw httpErr(404, 'not found');
+    return rows[0];
+  },
   async get(id) {
     const rows = await sbFetch(`/rest/v1/markers?id=eq.${id}&select=*`);
     return rows[0];
@@ -213,6 +221,13 @@ const fileStorage = {
     Object.assign(m, patch);
     fileSave();
     return m;
+  },
+  async delete(id) {
+    const i = fileMarkers.findIndex((x) => x.id === id);
+    if (i < 0) throw httpErr(404, 'not found');
+    fileMarkers.splice(i, 1);
+    fileSave();
+    return { ok: true };
   },
   async get(id) {
     return fileMarkers.find((x) => x.id === id);
@@ -373,26 +388,30 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // ---- Метки: продлить / чисто ----
-  const actionMatch = p.match(/^\/api\/markers\/([\w-]+)\/(renew|clear)$/);
+  // ---- Метки: продлить / чисто / удалить ----
+  const actionMatch = p.match(/^\/api\/markers\/([\w-]+)\/(renew|clear|delete)$/);
   if (actionMatch && req.method === 'POST') {
     const id = actionMatch[1];
     const act = actionMatch[2];
     try {
       const existing = await storage.get(id);
       if (!existing) throw httpErr(404, 'not found');
-      if (existing.status !== 'active') throw httpErr(400, 'only active markers can be ' + (act === 'renew' ? 'renewed' : 'cleared'));
+      if (existing.status !== 'active') throw httpErr(400, 'only active markers can be ' + (act === 'renew' ? 'renewed' : (act === 'clear' ? 'cleared' : 'deleted')));
       if (existing.expires_at <= Date.now()) throw httpErr(404, 'expired');
-      // «Чисто» — только пользователям из списка ALLOWED_CLEAR_USERS
-      if (act === 'clear' && ALLOWED_CLEAR_USERS.length > 0) {
-        if (!USE_SUPABASE) throw httpErr(403, '«Чисто» доступно только определённым пользователям');
+      // «Чисто» и «Удалить» — только пользователям из списка ALLOWED_CLEAR_USERS
+      if (act !== 'renew' && ALLOWED_CLEAR_USERS.length > 0) {
+        if (!USE_SUPABASE) throw httpErr(403, '«Чисто» и «Удалить» доступны только определённым пользователям');
         const token = bearerToken(req);
         if (!token) throw httpErr(401, 'Требуется вход');
         const user = await userFromToken(token);
         const nick = String(await nicknameOf(user.id, token) || '').toLowerCase();
         if (!ALLOWED_CLEAR_USERS.includes(nick)) {
-          throw httpErr(403, 'Нет прав: «Чисто» доступно только определённым пользователям');
+          throw httpErr(403, 'Нет прав: «Чисто» и «Удалить» доступны только определённым пользователям');
         }
+      }
+      if (act === 'delete') {
+        await storage.delete(id, bearerToken(req));
+        return sendJson(res, 200, { ok: true });
       }
       const patch = act === 'renew'
         ? { expires_at: existing.expires_at + HALF_HOUR }
