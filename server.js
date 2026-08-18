@@ -280,6 +280,18 @@ function bearerToken(req) {
   return m ? m[1] : null;
 }
 
+/* ---------- Мгновенные обновления (SSE) ---------- */
+// Открытые SSE-соединения всех посетителей; при любом изменении меток
+// (создание/чисто/удаление) им отправляется событие — карта обновляется сразу.
+const sseClients = new Set();
+
+function broadcastMarkers() {
+  if (sseClients.size === 0) return;
+  for (const client of sseClients) {
+    try { client.write('data: changed\n\n'); } catch (e) { sseClients.delete(client); }
+  }
+}
+
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -382,6 +394,7 @@ const server = http.createServer(async (req, res) => {
         created_at: Date.now(),
       };
       const created = await storage.create(marker, bearerToken(req));
+      broadcastMarkers();
       return sendJson(res, 201, created);
     } catch (e) {
       return sendJson(res, e.status || 500, { error: e.message });
@@ -415,16 +428,38 @@ const server = http.createServer(async (req, res) => {
       }
       if (act === 'delete') {
         await storage.delete(id, bearerToken(req));
+        broadcastMarkers();
         return sendJson(res, 200, { ok: true });
       }
       const patch = act === 'renew'
         ? { expires_at: existing.expires_at + HALF_HOUR }
         : { status: 'cleared', expires_at: Date.now() + 2 * HOUR };
       const updated = await storage.update(id, patch, bearerToken(req));
+      broadcastMarkers();
       return sendJson(res, 200, updated);
     } catch (e) {
       return sendJson(res, e.status || 500, { error: e.message });
     }
+  }
+
+  // ---- Мгновенные обновления: SSE-канал для всех посетителей ----
+  if (p === '/api/events' && req.method === 'GET') {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    });
+    res.write(': connected\n\n');
+    sseClients.add(res);
+    const ping = setInterval(() => {
+      try { res.write(': ping\n\n'); } catch (e) { /* соединение закрыто */ }
+    }, 20000);
+    req.on('close', () => {
+      clearInterval(ping);
+      sseClients.delete(res);
+    });
+    return;
   }
 
   // ---- Статика ----

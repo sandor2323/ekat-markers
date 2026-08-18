@@ -263,6 +263,15 @@ setInterval(() => {
   });
 }, 1000);
 
+// Мгновенные обновления: сервер сам сообщает об изменениях меток (SSE),
+// карта обновляется сразу, без ожидания 10-секундного опроса.
+if (window.EventSource) {
+  const es = new EventSource('/api/events');
+  es.onmessage = () => refresh();
+  // При обрыве EventSource переподключается сам; обычный опрос ниже
+  // остаётся страховкой на случай, если SSE недоступен.
+}
+
 setInterval(refresh, POLL_MS);
 refresh();
 
