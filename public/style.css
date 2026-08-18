@@ -188,6 +188,9 @@ html, body {
   align-items: center;
   justify-content: center;
 }
+.login.hidden {
+  display: none;
+}
 .login-box {
   background: var(--panel);
   border: 1px solid var(--panel-border);
