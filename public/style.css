@@ -173,6 +173,14 @@ html, body {
   box-shadow: 0 0 34px #ff2b2b;
   animation-delay: 0.27s;
 }
+.splash-hello {
+  margin-top: 30px;
+  font-size: 26px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+  text-align: center;
+}
 @keyframes blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.12; }

@@ -255,6 +255,13 @@ function authHeaders() {
   return token ? { Authorization: 'Bearer ' + token } : {};
 }
 
+// Приветствие на экране загрузки для уже вошедших пользователей
+const splashHello = document.getElementById('splash-hello');
+if (splashHello && safeGetName()) {
+  splashHello.textContent = 'Привет, ' + esc(safeGetName()) + '!';
+  splashHello.classList.remove('hidden');
+}
+
 // Экран загрузки: показываем 3 секунды, затем вход (если нет сохранённой сессии)
 setTimeout(() => {
   const splash = document.getElementById('splash');
