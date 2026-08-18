@@ -55,11 +55,16 @@ async function api(path, options) {
   const timer = setTimeout(() => ctrl.abort(), 60000);
   try {
     const res = await fetch(path, { ...options, signal: ctrl.signal });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data.error || 'Ошибка запроса');
+    const text = await res.text();
+    let data = null;
+    if (text) {
+      try { data = JSON.parse(text); }
+      catch (e) { throw new Error('Сервер вернул неожиданный ответ'); }
     }
-    return res.json();
+    if (!res.ok) {
+      throw new Error((data && data.error) || 'Ошибка запроса');
+    }
+    return data;
   } finally {
     clearTimeout(timer);
   }

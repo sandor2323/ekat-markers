@@ -163,6 +163,11 @@ const supabaseStorage = {
       body: JSON.stringify(patch),
       headers: { Prefer: 'return=representation' },
     }, token);
+    if (!rows || rows.length === 0) {
+      // База не обновила ни одной строки: запись не найдена или RLS-политика
+      // запрещает UPDATE. Отдаём понятную ошибку, а не пустое тело.
+      throw httpErr(502, 'Метка не обновлена в базе: запись не найдена или политика доступа (RLS) запрещает изменение. Проверьте политики UPDATE в Supabase.');
+    }
     return rows[0];
   },
   async get(id) {
@@ -214,11 +219,13 @@ const storage = USE_SUPABASE ? supabaseStorage : fileStorage;
 /* ---------- HTTP ---------- */
 
 function sendJson(res, code, data) {
+  const body = JSON.stringify(data === undefined ? null : data);
   res.writeHead(code, {
     'Content-Type': 'application/json; charset=utf-8',
     'Cache-Control': 'no-store',
+    'Content-Length': Buffer.byteLength(body),
   });
-  res.end(JSON.stringify(data));
+  res.end(body);
 }
 
 function readBody(req) {
