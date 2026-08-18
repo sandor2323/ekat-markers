@@ -147,12 +147,11 @@ async function nicknameOf(userId, token) {
 // Supabase: RLS проверяет auth.uid() === user_id
 const supabaseStorage = {
   async list() {
-    const now = Date.now();
-    await sbFetch(`/rest/v1/markers?expires_at=lte.${now}`, {
-      method: 'DELETE',
-      headers: { Prefer: 'return=representation' },
-    });
-    const rows = await sbFetch('/rest/v1/markers?select=*&order=created_at.asc');
+    // Истёкшие метки не показываем (фильтр вместо DELETE — в 2 раза быстрее:
+    // один запрос к базе вместо двух). Удаляются фоновой чисткой ниже.
+    const rows = await sbFetch(
+      `/rest/v1/markers?select=*&expires_at=gt.${Date.now()}&order=created_at.asc`
+    );
     return rows || [];
   },
   async create(marker, token) {
@@ -221,6 +220,19 @@ const fileStorage = {
 };
 
 const storage = USE_SUPABASE ? supabaseStorage : fileStorage;
+
+// Фоновая чистка истёкших меток: раз в 10 минут, чтобы не тормозить запросы
+// списка (раньше DELETE выполнялся при каждом обращении к /api/markers).
+if (USE_SUPABASE) {
+  setInterval(async () => {
+    try {
+      await sbFetch(`/rest/v1/markers?expires_at=lte.${Date.now()}`, {
+        method: 'DELETE',
+        headers: { Prefer: 'return=representation' },
+      });
+    } catch (e) { /* фоновая чистка не должна ронять сервер */ }
+  }, 10 * 60 * 1000);
+}
 
 /* ---------- HTTP ---------- */
 
