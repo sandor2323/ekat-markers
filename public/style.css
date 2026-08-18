@@ -9,6 +9,14 @@
   --green: #2ecc40;
 }
 
+/* Фирменный шрифт для приветствия */
+@font-face {
+  font-family: 'Terentiev SP';
+  src: url('fonts/Terentiev-SP-Demo.otf') format('opentype');
+  font-weight: 700;
+  font-display: swap;
+}
+
 * { box-sizing: border-box; }
 
 html, body {
@@ -146,6 +154,7 @@ html, body {
   z-index: 2000;
   background: #0a1a3f;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   transition: opacity 0.5s;
@@ -174,7 +183,8 @@ html, body {
   animation-delay: 0.27s;
 }
 .splash-hello {
-  margin-top: 30px;
+  margin-top: 24px;
+  font-family: 'Terentiev SP', 'Acumin Pro', Acumin, 'Segoe UI', Arial, sans-serif;
   font-size: 26px;
   font-weight: 700;
   color: #fff;
