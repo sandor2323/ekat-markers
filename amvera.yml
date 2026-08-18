@@ -6,4 +6,4 @@ meta:
 
 run:
   scriptName: server.js
-  containerPort: 80
+  containerPort: 3000
