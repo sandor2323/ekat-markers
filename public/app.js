@@ -60,7 +60,7 @@ function fmtTime(ms) {
 
 /* ---------- API ---------- */
 
-async function api(path, options) {
+async function api(path, options, retries = 2) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 60000);
   try {
@@ -72,9 +72,21 @@ async function api(path, options) {
       catch (e) { throw new Error('Сервер вернул неожиданный ответ'); }
     }
     if (!res.ok) {
+      // 5xx — контейнер может «просыпаться»: повторяем через паузу
+      if (retries > 0 && res.status >= 500) {
+        await new Promise((r) => setTimeout(r, 1500));
+        return api(path, options, retries - 1);
+      }
       throw new Error((data && data.error) || 'Ошибка запроса');
     }
     return data;
+  } catch (err) {
+    // Таймаут (сеть/пробуждение) — тоже пробуем ещё раз
+    if (retries > 0 && err.name === 'AbortError') {
+      await new Promise((r) => setTimeout(r, 1500));
+      return api(path, options, retries - 1);
+    }
+    throw err;
   } finally {
     clearTimeout(timer);
   }
@@ -296,15 +308,18 @@ setInterval(() => {
 }, 1000);
 
 // Мгновенные обновления: сервер сам сообщает об изменениях меток (SSE),
-// карта обновляется сразу, без ожидания 10-секундного опроса.
+// карта обновляется сразу. Если SSE жив — сервер не дёргаем зря;
+// если канал оборвался — страховочный опрос каждые 3 секунды.
+let sseAlive = false;
 if (window.EventSource) {
   const es = new EventSource('/api/events');
+  es.onopen = () => { sseAlive = true; };
   es.onmessage = () => refresh();
-  // При обрыве EventSource переподключается сам; обычный опрос ниже
-  // остаётся страховкой на случай, если SSE недоступен.
+  es.onerror = () => { sseAlive = false; }; // EventSource переподключится сам
 }
-
-setInterval(refresh, POLL_MS);
+setInterval(() => {
+  if (!sseAlive) refresh();
+}, 3000);
 refresh();
 
 /* ---------- Экран загрузки и вход ---------- */

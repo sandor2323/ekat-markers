@@ -493,7 +493,10 @@ const server = http.createServer(async (req, res) => {
       return res.end('404 — страница не найдена');
     }
     const isVendor = file.startsWith('/vendor/');
-    const cacheControl = isVendor ? 'public, max-age=86400' : 'no-cache';
+    // Файлы с версией (?v=N) меняются только при новом деплое — кэшируем их
+    // на сутки (Cloudflare/браузер), остальное — без кэша.
+    const hasVersion = !!url.search;
+    const cacheControl = (isVendor || hasVersion) ? 'public, max-age=86400' : 'no-cache';
     res.writeHead(200, {
       'Content-Type': MIME[path.extname(full).toLowerCase()] || 'application/octet-stream',
       'Cache-Control': cacheControl,
