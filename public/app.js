@@ -161,6 +161,20 @@ function renderAll() {
   });
 }
 
+// Оптимистичное обновление метки: меняем локально СРАЗУ (цвет/статус/время),
+// сервер подтверждает в фоне. Если сервер откажет — refresh вернёт состояние.
+function applyLocalMarkerUpdate(id, mutate) {
+  const m = markers.find((x) => x.id === id);
+  if (!m) return;
+  mutate(m);
+  layerGroup.eachLayer((marker) => {
+    if (marker.__data && marker.__data.id === id) {
+      marker.setIcon(markerIcon(m));
+      marker.setPopupContent(popupHtml(m));
+    }
+  });
+}
+
 // Действия из попапа (делегирование на документе).
 document.addEventListener('click', async (e) => {
   const btn = e.target.closest('[data-act]');
@@ -177,13 +191,16 @@ document.addEventListener('click', async (e) => {
   btn.disabled = true;
   try {
     if (act === 'renew') {
+      applyLocalMarkerUpdate(id, (m) => { m.expires_at += RENEW_TIME; });
       await api(`/api/markers/${id}/renew`, { method: 'POST', headers: authHeaders() });
     } else if (act === 'clear') {
+      applyLocalMarkerUpdate(id, (m) => { m.status = 'cleared'; m.expires_at = Date.now() + LIFETIME; });
       await api(`/api/markers/${id}/clear`, { method: 'POST', headers: authHeaders() });
     }
     await refresh();
   } catch (err) {
     alert(err.message);
+    await refresh(); // при ошибке возвращаем актуальное состояние
   }
 });
 
